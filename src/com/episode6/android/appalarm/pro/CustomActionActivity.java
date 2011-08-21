@@ -62,7 +62,7 @@ public class CustomActionActivity extends Activity {
 //		c.close();
 	}
 	
-	private void startUnheardLatestPodcast() {
+	/*private void startUnheardLatestPodcast() {
 		Cursor c = getContentResolver().query(GOOGLE_LISTEN_ITEMS_URI, new String[] {"listenid"}, "(listened is null) OR (listened=0)", null, "pubDate DESC");
 		if (c.moveToFirst()) {
 			try {
@@ -76,7 +76,7 @@ public class CustomActionActivity extends Activity {
 			startLatestPodcast();
 		}
 		
-	}
+	}*/
 	
 	private void startLatestPodcastCustom(String channelGuid) {
 		Cursor c = getContentResolver().query(GOOGLE_LISTEN_ITEMS_URI, new String[] {"guid"}, "channelGuid='"+channelGuid+"'", null, "pubDate DESC");

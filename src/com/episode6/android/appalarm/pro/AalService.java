@@ -23,6 +23,7 @@ import android.net.NetworkInfo;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
 import android.os.BatteryManager;
+import android.os.CountDownTimer;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.PowerManager;
@@ -56,6 +57,7 @@ public class AalService extends Service {
 	private static final String PREF_KEY_SNOOZE_ALARM = "snooze_alarm";
 	private static final String PREF_KEY_SNOOZE_VOLUME = "snooze_volume";
 	private static final String PREF_KEY_SHOW_NOTIF = "show_notif";
+	private static final String PREF_KEY_SNOOZE_APP_VOL = "snoozed_app_vol";
 	
 	private static final int NOTIFY_ID = R.layout.main;
 	private static final int NOTIFY_ID_ALARM_SET = R.layout.alarm_edit;
@@ -66,6 +68,11 @@ public class AalService extends Service {
 	private PowerManager.WakeLock mFullWakeLock;
 	private PowerManager.WakeLock mPartialWakeLock;
 	private final Handler mHandler = new Handler();
+	private AudioManager am = (AudioManager) null;
+	private CountDownTimer ct = (CountDownTimer) null;
+	private int maxVol = 15;
+	private int newVol = 8;
+	private int curVol = 1;
 	
 	private AalDbAdapter mDbAdapter;
 	
@@ -84,6 +91,8 @@ public class AalService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
+		am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		maxVol = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
 		PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
 		mPartialWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "AppAlarmTag");
 		mPartialWakeLock.acquire();
@@ -100,8 +109,28 @@ public class AalService extends Service {
 		mIsCounting = false;
 		mIsWaitingForWifi = false;
 		mIsShowingSnooze = false;
+		
+
 	}
 
+	private void startCountDown(){
+		ct = new CountDownTimer(195000, 15000) {
+
+			@Override
+			public void onFinish() {
+				am.setStreamVolume(AudioManager.STREAM_MUSIC, newVol, AudioManager.FLAG_SHOW_UI);				
+			}
+
+			@Override
+			public void onTick(long arg0) {
+				if((curVol < newVol) && (curVol < maxVol)){
+				curVol++;	
+				am.setStreamVolume(AudioManager.STREAM_MUSIC, curVol, AudioManager.FLAG_SHOW_UI);
+				}
+			}
+		
+		};
+	}
 	@Override
 	public void onDestroy() {
 		setNextAlarm();
@@ -130,7 +159,12 @@ public class AalService extends Service {
 			mNotificationManager.cancel(NOTIFY_ID);
 		} catch (Exception e) {}
 //		Toast.makeText(this, "Service Destroyed", Toast.LENGTH_SHORT).show();
-		
+		try {
+			ct.cancel();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		am = null;
 		super.onDestroy();
 	}
 
@@ -227,6 +261,7 @@ public class AalService extends Service {
 	
 	private void actionStopAlarm(boolean killApp) {
 		cancelSnoozeAlarm();
+		am.requestAudioFocus(changed, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
 		mIsPlayingBackup = false;
 		try {
 			mRingtone.stop();
@@ -239,11 +274,20 @@ public class AalService extends Service {
 			i.putExtra(KillAndLaunchActivity.EXTRA_PACKAGE_TO_RESTART, mCurrentAlarmItem.getString(AlarmItem.KEY_PACKAGE_NAME));
 			startActivity(i);
 		}
+		am.abandonAudioFocus(changed);
 		stopSelf();
 	}
+	AudioManager.OnAudioFocusChangeListener changed = new AudioManager.OnAudioFocusChangeListener() {
+		
+		public void onAudioFocusChange(int focusChange) {
+			if (focusChange != AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+			    // could not get audio focus.
+			}
+			
+		}
+	};
 	
 	private void actionSnoozeAlarm() {
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
 		saveSnoozeVolume(am.getStreamVolume(AudioManager.STREAM_MUSIC));
 		am.setStreamVolume(AudioManager.STREAM_MUSIC, 0, AudioManager.FLAG_SHOW_UI);
 		mIsGoingSnooze = true;
@@ -268,10 +312,11 @@ public class AalService extends Service {
 	private void actionRecoverSnoozeAlarm(boolean dontShowSleep) {
 		turnOnForeground(getNotification(R.string.as_nm_launched, R.string.as_nt_launched));
 		cancelAlarmSnoozeNotification();
-		
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+
+		//curVol = getSnoozeVolume();
 		am.setStreamVolume(AudioManager.STREAM_MUSIC, getSnoozeVolume(), AudioManager.FLAG_SHOW_UI);
-		
+		startCountDown();
+		ct.start();
 		
 		long alarmId = getSnoozeAlarm();
 		if (alarmId != 0) {
@@ -290,7 +335,7 @@ public class AalService extends Service {
 	}
 	
 	private void actionDismissSnooze(boolean killApp) {
-		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		//curVol = getSnoozeVolume();
 		am.setStreamVolume(AudioManager.STREAM_MUSIC, getSnoozeVolume(), AudioManager.FLAG_SHOW_UI);
 		cancelSnoozeAlarm();
 		long alarmId = getSnoozeAlarm();
@@ -308,6 +353,12 @@ public class AalService extends Service {
 			i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 			i.putExtra(KillAndLaunchActivity.EXTRA_PACKAGE_TO_RESTART, mCurrentAlarmItem.getString(AlarmItem.KEY_PACKAGE_NAME));
 			startActivity(i);
+		}
+		try {
+			ct.cancel();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 		stopSelf();	
 	}
@@ -347,14 +398,17 @@ public class AalService extends Service {
 		} else {
 		
 			if (mCurrentAlarmItem.getBool(AlarmItem.KEY_SET_MEDIA_VOLUME)) {
-				AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
-				int maxVol = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-				int newVol = mCurrentAlarmItem.getInt(AlarmItem.KEY_MEDIA_VOLUME);
+
+				maxVol = am.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+				newVol = mCurrentAlarmItem.getInt(AlarmItem.KEY_MEDIA_VOLUME);
 				if (newVol > maxVol) {
 					newVol = maxVol;
 				}
-				am.setStreamVolume(AudioManager.STREAM_MUSIC, newVol, AudioManager.FLAG_SHOW_UI);
-				am = null;
+				curVol = 1;
+				am.setStreamVolume(AudioManager.STREAM_MUSIC, curVol, AudioManager.FLAG_SHOW_UI);
+				startCountDown();
+				ct.start();
+				//am = null;
 			}
 			
 			if (mCurrentAlarmItem.getBool(AlarmItem.KEY_NET_TEST)) {
@@ -380,6 +434,8 @@ public class AalService extends Service {
 			mHandler.postDelayed(mSetTask, 2000);
 			}
 	}
+	
+
 	
 	private void checkAndShowSnooze(boolean doPause) {
 		if (doPause) {
@@ -519,6 +575,11 @@ public class AalService extends Service {
 	
 	private void stopOrSet() {
 		if (isSafeToStopSelf()) {
+			try {
+				ct.cancel();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 			stopSelf();
 		} else {
 			setNextAlarm();
@@ -866,10 +927,12 @@ public class AalService extends Service {
 	private void saveSnoozeVolume(int vol) {
 		SharedPreferences.Editor spe = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE).edit();
 		spe.putInt(PREF_KEY_SNOOZE_VOLUME, vol);
+		spe.putInt(PREF_KEY_SNOOZE_APP_VOL, newVol);
 		spe.commit();
 	}
 	private int getSnoozeVolume() {
 		SharedPreferences sp = getSharedPreferences(PREF_FILE_NAME, MODE_PRIVATE);
+		newVol = sp.getInt(PREF_KEY_SNOOZE_APP_VOL, maxVol);
 		return sp.getInt(PREF_KEY_SNOOZE_VOLUME, 15);
 	}
 	
