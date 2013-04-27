@@ -38,7 +38,7 @@ public class KillAndLaunchActivity extends Activity {
         
         try {
 			Method m = ActivityManager.class.getMethod("killBackgroundProcesses", new Class[] {String.class});
-			setContentView(R.layout.froyo_kill_screen);
+			//setContentView(R.layout.froyo_kill_screen);
 		} catch (SecurityException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -50,7 +50,7 @@ public class KillAndLaunchActivity extends Activity {
 
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
-		setContentView(R.layout.froyo_kill_screen);
+		//setContentView(R.layout.froyo_kill_screen);
 		super.onConfigurationChanged(newConfig);
 	}
     

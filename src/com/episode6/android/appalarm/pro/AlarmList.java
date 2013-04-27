@@ -13,20 +13,22 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.database.Cursor;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
-import android.text.SpannableString;
 import android.text.method.LinkMovementMethod;
 import android.text.util.Linkify;
 import android.util.Log;
@@ -73,7 +75,7 @@ public class AlarmList extends ListActivity {
 	private static final int DIALOG_CLEAR_ALARMS = 4;
 	private static final int DIALOG_SD_ERROR = 5;
 	private static final int DIALOG_WELCOME = 6;
-	
+	Resources res;
 	private boolean addedCustom = false;
 	
     /** Called when the activity is first created. */
@@ -93,6 +95,21 @@ public class AlarmList extends ListActivity {
         	getIntent().setData(null);
 //        	finish();
         }
+        
+		ComponentName comp = new ComponentName("com.episode6.android.appalarm.pro", "AlarmList");
+		PackageInfo pinfo;
+		String ver = null;
+		res = getResources();
+		try {
+			pinfo = getPackageManager()
+					.getPackageInfo(comp.getPackageName(), 0);
+			ver = pinfo.versionName;
+		} catch (NameNotFoundException e) {
+			//Log.e(LOG_TAG, "error" + e.getMessage());
+		}
+
+		setTitle(res.getString(R.string.app_name) + " Version: "
+				+ ver);
         
         Cursor c = mDbAdapter.fetchAllAlarms();
         startManagingCursor(c);

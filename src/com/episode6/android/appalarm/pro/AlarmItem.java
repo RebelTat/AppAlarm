@@ -44,6 +44,7 @@ public class AlarmItem extends SimplePropertyCollection {
 	public static final String KEY_BACKUP_OPTION = "alarm_backup_option";
 	public static final String KEY_PACKAGE_NAME = "alarm_package_name";
 	public static final String KEY_CUSTOM_ACTION = "alarm_custom_action";
+	public static final String KEY_SONG = "alarm_song";
 	public static final String KEY_CUSTOM_DATA = "alarm_custom_data";
 	public static final String KEY_CUSTOM_TYPE = "alarm_custom_type";
 	public static final String KEY_WIFI = "alarm_wifi";
@@ -260,11 +261,15 @@ public class AlarmItem extends SimplePropertyCollection {
 	public boolean isCustomIntent() {
 		return getString(KEY_PACKAGE_NAME).equals("custom");
 	}
+	
+	public boolean isSong(){
+		return getString(KEY_PACKAGE_NAME).equals("song");
+	}
 	public boolean hasPackageName() {
 		if (getString(KEY_PACKAGE_NAME) == null || getString(KEY_PACKAGE_NAME).equals("")) {
 			return false;
 		} else {
-			return !isCustomIntent();
+			return !isCustomIntent() || isSong();
 		}
 	}
 	
@@ -277,6 +282,10 @@ public class AlarmItem extends SimplePropertyCollection {
 		}
 		if (isCustomIntent()) {
 			return "Custom";
+		}
+		
+		if(isSong()){
+			return "Song";
 		}
 		
 		String rtr = "";

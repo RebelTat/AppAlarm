@@ -19,6 +19,7 @@ import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.provider.MediaStore;
 import android.text.ClipboardManager;
 import android.view.ContextMenu;
 import android.view.Menu;
@@ -35,19 +36,21 @@ import android.widget.TimePicker;
 import android.widget.Toast;
 
 public class AlarmEdit extends Activity {
-	
-	private static final int MENU_OTHER_APPS = Menu.FIRST+1;
-	private static final int MENU_SUPPORT = Menu.FIRST+2;
-	private static final int MENU_SHARE_INTENT = Menu.FIRST+3;
-	
+
+	private static final int MENU_OTHER_APPS = Menu.FIRST + 1;
+	private static final int MENU_SUPPORT = Menu.FIRST + 2;
+	private static final int MENU_SHARE_INTENT = Menu.FIRST + 3;
+
 	private static final int DIALOG_PICK_TIME = 1;
 	private static final int DIALOG_PICK_BACKUP_OPTION = 2;
 	private static final int DIALOG_PICK_APP_TYPE = 3;
 	private static final int DIALOG_PICK_WIFI_FAILED_ACTION = 4;
 	private static final int DIALOG_WARN_STOP_APP = 5;
 	private static final int DIALOG_BITLY = 6;
-	private static final String[] APP_TYPE_OPTIONS = {"Choose App", "Create Shortcut", "Home Screen Shortcut", "Pandora Radio Station", "Custom Intent", "Clear App Selection"};
-	
+	private static final String[] APP_TYPE_OPTIONS = { "Choose App",
+			"Create Shortcut", "Home Screen Shortcut", "Pandora Radio Station",
+			"Custom Intent", "Song", "Clear App Selection" };
+
 	private static final int ACTION_CHOOSE_APP = 2;
 	private static final int ACTION_CHOOSE_REPEAT = 3;
 	private static final int ACTION_CHOOSE_RINGTONE = 4;
@@ -63,126 +66,141 @@ public class AlarmEdit extends Activity {
 	private static final int FETCH_HOME_SCREEN_SHORTCUT = 15;
 	private static final int ACTION_CHOOSE_APP_CUSTOM = 16;
 	private static final int ACTION_INPUT_LABEL = 17;
-	
+	private static final int ACTION_CHOOSE_SONG = 18;
+
 	private static final int CTX_EDIT_INTENT = 18;
 	private static final int CTX_SHARE_INTENT = 19;
-	
+
 	private View mRootView;
 	private ScrollView mSvScroller;
-	private LinearLayout mLlEnabled, mLlTime, mLlAppSelect, mLlRepeat, mLlDontLaunchOnCall, mLlNetTest, mLlNetTestUrl, mLlBackup, mLlBackupOption, mLlWifi, mLlWlBattTimeout, mLlWlPlugTimeout, mLlSetMediaVolume, mLlMediaVolume, mLlWifiOptions, mLlWifiWaitTime, mLlWifiFailedAction, mLlTurnOffWifi, mLlStopApp, mLlForceRestart, mLlMuteSnooze, mLlMuteSnoozeTime, mLlLabel;
-	private CheckBox mChkEnabled, mChkDontLaunchOnCall, mChkNetTest, mChkWifi, mChkSetMediaVolume, mChkTurnOffWifi, mChkStopApp, mChkForceRestart, mChkMuteSnooze;
-	private TextView mTvTime, mTvApp, mTvRepeat, mTvBackupOption, mTvBackup, mTvNetTestUrl, mTvWlBattTimeout, mTvWlPlugTimeout, mTvMediaVolume, mTvWifiWaitTime, mTvWifiFailedAction, mTvMuteSnoozeTime, mTvLabel;
+	private LinearLayout mLlEnabled, mLlTime, mLlAppSelect, mLlRepeat,
+			mLlDontLaunchOnCall, mLlNetTest, mLlNetTestUrl, mLlBackup,
+			mLlBackupOption, mLlWifi, mLlWlBattTimeout, mLlWlPlugTimeout,
+			mLlSetMediaVolume, mLlMediaVolume, mLlWifiOptions, mLlWifiWaitTime,
+			mLlWifiFailedAction, mLlTurnOffWifi, mLlStopApp, mLlForceRestart,
+			mLlMuteSnooze, mLlMuteSnoozeTime, mLlLabel;
+	private CheckBox mChkEnabled, mChkDontLaunchOnCall, mChkNetTest, mChkWifi,
+			mChkSetMediaVolume, mChkTurnOffWifi, mChkStopApp, mChkForceRestart,
+			mChkMuteSnooze;
+	private TextView mTvTime, mTvApp, mTvRepeat, mTvBackupOption, mTvBackup,
+			mTvNetTestUrl, mTvWlBattTimeout, mTvWlPlugTimeout, mTvMediaVolume,
+			mTvWifiWaitTime, mTvWifiFailedAction, mTvMuteSnoozeTime, mTvLabel;
 	private ImageView mIvAppIcon;
-	
+
 	private AalDbAdapter mDbAdapter;
 	private AlarmItem mAlarmItem;
-	
+
 	private String mUrl;
-	
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.alarm_edit);
 		mRootView = findViewById(R.id.ea_ll_root);
-		
+
 		mDbAdapter = new AalDbAdapter(this);
 		mDbAdapter.open();
-		
+
 		findViews();
 		loadAlarmFromIntent();
 		assignListeners();
 	}
-	
+
 	@Override
 	public void onConfigurationChanged(Configuration newConfig) {
 		super.onConfigurationChanged(newConfig);
 		setContentView(mRootView);
-		
-//		findViews();
-//		loadAlarmFromGlobal();
-//		assignListeners();
+
+		// findViews();
+		// loadAlarmFromGlobal();
+		// assignListeners();
 	}
-	
+
 	private void findViews() {
-		mSvScroller = (ScrollView)findViewById(R.id.ea_sv_full_scroller);
-		
-		mLlEnabled = (LinearLayout)findViewById(R.id.ea_ll_alarm_enabled);
-		mLlTime = (LinearLayout)findViewById(R.id.ea_ll_alarm_time);
-		mLlAppSelect = (LinearLayout)findViewById(R.id.ea_ll_app);
-		mLlNetTest = (LinearLayout)findViewById(R.id.ea_ll_net_test);
-		mLlNetTestUrl = (LinearLayout)findViewById(R.id.ea_ll_net_test_url);
-		mLlRepeat = (LinearLayout)findViewById(R.id.ea_ll_alarm_repeat);
-		mLlBackup = (LinearLayout)findViewById(R.id.ea_ll_backup_alarm);
-		mLlBackupOption = (LinearLayout)findViewById(R.id.ea_ll_backup_option);
-		mLlWifi = (LinearLayout)findViewById(R.id.ea_ll_turn_on_wifi);
-		mLlWlBattTimeout = (LinearLayout)findViewById(R.id.ea_ll_wl_timeout_batt);
-		mLlWlPlugTimeout = (LinearLayout)findViewById(R.id.ea_ll_wl_timeout_plug);
-		mLlSetMediaVolume = (LinearLayout)findViewById(R.id.ea_ll_set_media_volume);
-		mLlMediaVolume = (LinearLayout)findViewById(R.id.ea_ll_media_volume);
-		mLlDontLaunchOnCall = (LinearLayout)findViewById(R.id.ea_ll_dont_launch_on_call);
-		mLlWifiOptions = (LinearLayout)findViewById(R.id.ea_ll_wifi_options);
-		mLlWifiWaitTime = (LinearLayout)findViewById(R.id.ea_ll_wifi_wait_time);
-		mLlWifiFailedAction = (LinearLayout)findViewById(R.id.ea_ll_wifi_failed_action);
-		mLlTurnOffWifi = (LinearLayout)findViewById(R.id.ea_ll_turn_off_wifi);
-		mLlStopApp = (LinearLayout)findViewById(R.id.ea_ll_stop_app);
-		mLlForceRestart = (LinearLayout)findViewById(R.id.ea_ll_force_restart);
-		mLlMuteSnooze = (LinearLayout)findViewById(R.id.ea_ll_mute_snooze);
-		mLlMuteSnoozeTime = (LinearLayout)findViewById(R.id.ea_ll_mute_snooze_time);
-		mLlLabel = (LinearLayout)findViewById(R.id.ea_ll_label);
-		
-		mChkEnabled = (CheckBox)findViewById(R.id.ea_chk_alarm_enabled);
-		mChkNetTest = (CheckBox)findViewById(R.id.ea_chk_net_test);
-		mChkDontLaunchOnCall = (CheckBox)findViewById(R.id.ea_chk_dont_launch_on_call);
-		mChkWifi = (CheckBox)findViewById(R.id.ea_chk_turn_on_wifi);
-		mChkSetMediaVolume = (CheckBox)findViewById(R.id.ea_chk_set_media_volume);
-		mChkTurnOffWifi = (CheckBox)findViewById(R.id.ea_chk_turn_off_wifi);
-		mChkStopApp = (CheckBox)findViewById(R.id.ea_chk_stop_app);
-		mChkForceRestart = (CheckBox)findViewById(R.id.ea_chk_force_restart);
-		mChkMuteSnooze = (CheckBox)findViewById(R.id.ea_chk_mute_snooze);
-		
-		mTvTime = (TextView)findViewById(R.id.ea_tv_time);
-		mTvApp = (TextView)findViewById(R.id.ea_tv_app_name);
-		mTvRepeat = (TextView)findViewById(R.id.ea_tv_alarm_repeat);
-		mTvBackupOption = (TextView)findViewById(R.id.ea_tv_backup_option);
-		mTvBackup = (TextView)findViewById(R.id.ea_tv_backup_alarm);
-		mTvNetTestUrl = (TextView)findViewById(R.id.ea_tv_net_test_url);
-		mTvWlBattTimeout = (TextView)findViewById(R.id.ea_tv_wl_timeout_batt);
-		mTvWlPlugTimeout = (TextView)findViewById(R.id.ea_tv_wl_timeout_plug);
-		mTvMediaVolume = (TextView)findViewById(R.id.ea_tv_media_volume);
-		mTvWifiWaitTime = (TextView)findViewById(R.id.ea_tv_wifi_wait_time);
-		mTvWifiFailedAction = (TextView)findViewById(R.id.ea_tv_wifi_failed_action);
-		mTvMuteSnoozeTime = (TextView)findViewById(R.id.ea_tv_mute_snooze_time);
-		mTvLabel = (TextView)findViewById(R.id.ea_tv_label);
-		
-		mIvAppIcon = (ImageView)findViewById(R.id.ea_iv_app_icon);
-		
+		mSvScroller = (ScrollView) findViewById(R.id.ea_sv_full_scroller);
+
+		mLlEnabled = (LinearLayout) findViewById(R.id.ea_ll_alarm_enabled);
+		mLlTime = (LinearLayout) findViewById(R.id.ea_ll_alarm_time);
+		mLlAppSelect = (LinearLayout) findViewById(R.id.ea_ll_app);
+		mLlNetTest = (LinearLayout) findViewById(R.id.ea_ll_net_test);
+		mLlNetTestUrl = (LinearLayout) findViewById(R.id.ea_ll_net_test_url);
+		mLlRepeat = (LinearLayout) findViewById(R.id.ea_ll_alarm_repeat);
+		mLlBackup = (LinearLayout) findViewById(R.id.ea_ll_backup_alarm);
+		mLlBackupOption = (LinearLayout) findViewById(R.id.ea_ll_backup_option);
+		mLlWifi = (LinearLayout) findViewById(R.id.ea_ll_turn_on_wifi);
+		mLlWlBattTimeout = (LinearLayout) findViewById(R.id.ea_ll_wl_timeout_batt);
+		mLlWlPlugTimeout = (LinearLayout) findViewById(R.id.ea_ll_wl_timeout_plug);
+		mLlSetMediaVolume = (LinearLayout) findViewById(R.id.ea_ll_set_media_volume);
+		mLlMediaVolume = (LinearLayout) findViewById(R.id.ea_ll_media_volume);
+		mLlDontLaunchOnCall = (LinearLayout) findViewById(R.id.ea_ll_dont_launch_on_call);
+		mLlWifiOptions = (LinearLayout) findViewById(R.id.ea_ll_wifi_options);
+		mLlWifiWaitTime = (LinearLayout) findViewById(R.id.ea_ll_wifi_wait_time);
+		mLlWifiFailedAction = (LinearLayout) findViewById(R.id.ea_ll_wifi_failed_action);
+		mLlTurnOffWifi = (LinearLayout) findViewById(R.id.ea_ll_turn_off_wifi);
+		mLlStopApp = (LinearLayout) findViewById(R.id.ea_ll_stop_app);
+		mLlForceRestart = (LinearLayout) findViewById(R.id.ea_ll_force_restart);
+		mLlMuteSnooze = (LinearLayout) findViewById(R.id.ea_ll_mute_snooze);
+		mLlMuteSnoozeTime = (LinearLayout) findViewById(R.id.ea_ll_mute_snooze_time);
+		mLlLabel = (LinearLayout) findViewById(R.id.ea_ll_label);
+
+		mChkEnabled = (CheckBox) findViewById(R.id.ea_chk_alarm_enabled);
+		mChkNetTest = (CheckBox) findViewById(R.id.ea_chk_net_test);
+		mChkDontLaunchOnCall = (CheckBox) findViewById(R.id.ea_chk_dont_launch_on_call);
+		mChkWifi = (CheckBox) findViewById(R.id.ea_chk_turn_on_wifi);
+		mChkSetMediaVolume = (CheckBox) findViewById(R.id.ea_chk_set_media_volume);
+		mChkTurnOffWifi = (CheckBox) findViewById(R.id.ea_chk_turn_off_wifi);
+		mChkStopApp = (CheckBox) findViewById(R.id.ea_chk_stop_app);
+		mChkForceRestart = (CheckBox) findViewById(R.id.ea_chk_force_restart);
+		mChkMuteSnooze = (CheckBox) findViewById(R.id.ea_chk_mute_snooze);
+
+		mTvTime = (TextView) findViewById(R.id.ea_tv_time);
+		mTvApp = (TextView) findViewById(R.id.ea_tv_app_name);
+		mTvRepeat = (TextView) findViewById(R.id.ea_tv_alarm_repeat);
+		mTvBackupOption = (TextView) findViewById(R.id.ea_tv_backup_option);
+		mTvBackup = (TextView) findViewById(R.id.ea_tv_backup_alarm);
+		mTvNetTestUrl = (TextView) findViewById(R.id.ea_tv_net_test_url);
+		mTvWlBattTimeout = (TextView) findViewById(R.id.ea_tv_wl_timeout_batt);
+		mTvWlPlugTimeout = (TextView) findViewById(R.id.ea_tv_wl_timeout_plug);
+		mTvMediaVolume = (TextView) findViewById(R.id.ea_tv_media_volume);
+		mTvWifiWaitTime = (TextView) findViewById(R.id.ea_tv_wifi_wait_time);
+		mTvWifiFailedAction = (TextView) findViewById(R.id.ea_tv_wifi_failed_action);
+		mTvMuteSnoozeTime = (TextView) findViewById(R.id.ea_tv_mute_snooze_time);
+		mTvLabel = (TextView) findViewById(R.id.ea_tv_label);
+
+		mIvAppIcon = (ImageView) findViewById(R.id.ea_iv_app_icon);
+
 	}
-	
+
 	private void loadAlarmFromIntent() {
 		Intent i = getIntent();
 		if (i.hasExtra(AlarmItem.KEY_ROWID)) {
-			mAlarmItem = mDbAdapter.getAlarmById(i.getLongExtra(AlarmItem.KEY_ROWID, 0));
+			mAlarmItem = mDbAdapter.getAlarmById(i.getLongExtra(
+					AlarmItem.KEY_ROWID, 0));
 		} else {
 			mAlarmItem = mDbAdapter.getNewAlarm();
 		}
-		
+
 		loadAlarmFromGlobal();
 	}
-	
+
 	private void loadAlarmFromGlobal() {
-		
-		
+
 		mChkEnabled.setChecked(mAlarmItem.getBool(AlarmItem.KEY_ENABLED));
-		mChkDontLaunchOnCall.setChecked(mAlarmItem.getBool(AlarmItem.KEY_DONT_LAUNCH_ON_CALL));
+		mChkDontLaunchOnCall.setChecked(mAlarmItem
+				.getBool(AlarmItem.KEY_DONT_LAUNCH_ON_CALL));
 		mChkNetTest.setChecked(mAlarmItem.getBool(AlarmItem.KEY_NET_TEST));
 		mChkWifi.setChecked(mAlarmItem.getBool(AlarmItem.KEY_WIFI));
-		mChkSetMediaVolume.setChecked(mAlarmItem.getBool(AlarmItem.KEY_SET_MEDIA_VOLUME));
-		mChkTurnOffWifi.setChecked(mAlarmItem.getBool(AlarmItem.KEY_TURN_OFF_WIFI));
-		mChkStopApp.setChecked(mAlarmItem.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT));
-		mChkForceRestart.setChecked(mAlarmItem.getBool(AlarmItem.KEY_FORCE_RESTART));
-		mChkMuteSnooze.setChecked(mAlarmItem.getBool(AlarmItem.KEY_MUTE_SNOOZE));
-		
+		mChkSetMediaVolume.setChecked(mAlarmItem
+				.getBool(AlarmItem.KEY_SET_MEDIA_VOLUME));
+		mChkTurnOffWifi.setChecked(mAlarmItem
+				.getBool(AlarmItem.KEY_TURN_OFF_WIFI));
+		mChkStopApp.setChecked(mAlarmItem
+				.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT));
+		mChkForceRestart.setChecked(mAlarmItem
+				.getBool(AlarmItem.KEY_FORCE_RESTART));
+		mChkMuteSnooze
+				.setChecked(mAlarmItem.getBool(AlarmItem.KEY_MUTE_SNOOZE));
+
 		vUpdateTime();
 		vUpdateApp();
 		vUpdateRepeat();
@@ -194,13 +212,13 @@ public class AlarmEdit extends Activity {
 		vUpdateMediaVolume(false);
 		vUpdateWifi();
 		vUpdateLabel();
-		
+
 	}
-	
-	
+
 	private void vUpdateTime() {
 		mTvTime.setText(mAlarmItem.getAlarmText());
 	}
+
 	private void vUpdateApp() {
 		PackageManager pm = getPackageManager();
 		mTvApp.setText(mAlarmItem.getAppName(pm));
@@ -208,6 +226,7 @@ public class AlarmEdit extends Activity {
 		checkCustomAppPackage();
 		pm = null;
 	}
+
 	private void vUpdateLabel() {
 		String label = mAlarmItem.getString(AlarmItem.KEY_LABEL);
 		if (label == null || label.trim().equals("")) {
@@ -215,50 +234,67 @@ public class AlarmEdit extends Activity {
 		}
 		mTvLabel.setText(label);
 	}
+
 	private void vUpdateRepeat() {
 		mTvRepeat.setText(mAlarmItem.getRepeatText());
 	}
+
 	private void vUpdateBackup(boolean reloadBackupName) {
-		mTvBackupOption.setText(AlarmItem.BACKUP_OPTIONS[mAlarmItem.getInt(AlarmItem.KEY_BACKUP_OPTION)]);
-		if (mAlarmItem.getInt(AlarmItem.KEY_BACKUP_OPTION) != 0 || (mAlarmItem.getBool(AlarmItem.KEY_WIFI) && mAlarmItem.getInt(AlarmItem.KEY_WIFI_FAILED_ACTION) == AlarmItem.WIFI_FAILED_PLAY_BACKUP)) {
+		mTvBackupOption.setText(AlarmItem.BACKUP_OPTIONS[mAlarmItem
+				.getInt(AlarmItem.KEY_BACKUP_OPTION)]);
+		if (mAlarmItem.getInt(AlarmItem.KEY_BACKUP_OPTION) != 0
+				|| (mAlarmItem.getBool(AlarmItem.KEY_WIFI) && mAlarmItem
+						.getInt(AlarmItem.KEY_WIFI_FAILED_ACTION) == AlarmItem.WIFI_FAILED_PLAY_BACKUP)) {
 			mLlBackup.setVisibility(View.VISIBLE);
 		} else {
 			mLlBackup.setVisibility(View.GONE);
 		}
 		if (reloadBackupName) {
 			try {
-				Ringtone r = RingtoneManager.getRingtone(this, Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
+				Ringtone r = RingtoneManager.getRingtone(this,
+						Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
 				mTvBackup.setText(r.getTitle(this));
-			}
-			catch (Exception e) {
+			} catch (Exception e) {
 				try {
-					mAlarmItem.set(AlarmItem.KEY_BACKUP, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE).toString());
-					Ringtone r = RingtoneManager.getRingtone(this, Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
+					mAlarmItem.set(AlarmItem.KEY_BACKUP, RingtoneManager
+							.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+							.toString());
+					Ringtone r = RingtoneManager.getRingtone(this, Uri
+							.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
 					mTvBackup.setText(r.getTitle(this));
 				} catch (Exception e2) {
 					try {
-						mAlarmItem.set(AlarmItem.KEY_BACKUP, RingtoneManager.getValidRingtoneUri(getBaseContext()).toString());
-						Ringtone r = RingtoneManager.getRingtone(this, Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
+						mAlarmItem.set(AlarmItem.KEY_BACKUP, RingtoneManager
+								.getValidRingtoneUri(getBaseContext())
+								.toString());
+						Ringtone r = RingtoneManager.getRingtone(this, Uri
+								.parse(mAlarmItem
+										.getString(AlarmItem.KEY_BACKUP)));
 						mTvBackup.setText(r.getTitle(this));
 					} catch (Exception e3) {
-						mTvBackup.setText("Error reading ringtone, please select one.");
+						mTvBackup
+								.setText("Error reading ringtone, please select one.");
 					}
 				}
-				
+
 			}
 		}
 	}
+
 	private void vUpdateNetTest() {
 		if (mAlarmItem.getBool(AlarmItem.KEY_NET_TEST)) {
 			mLlNetTestUrl.setVisibility(View.VISIBLE);
-			mTvNetTestUrl.setText(mAlarmItem.getString(AlarmItem.KEY_NET_TEST_URL));
+			mTvNetTestUrl.setText(mAlarmItem
+					.getString(AlarmItem.KEY_NET_TEST_URL));
 		} else {
 			mLlNetTestUrl.setVisibility(View.GONE);
 		}
 	}
+
 	private void vUpdateBattTimeout() {
 		mTvWlBattTimeout.setText(mAlarmItem.getBattTimeoutText());
 	}
+
 	private void vUpdatePlugTimeout() {
 		mTvWlPlugTimeout.setText(mAlarmItem.getPlugTimeoutText());
 	}
@@ -274,6 +310,7 @@ public class AlarmEdit extends Activity {
 			mLlMediaVolume.setVisibility(View.GONE);
 		}
 	}
+
 	private void vUpdateWifi() {
 		if (mAlarmItem.getBool(AlarmItem.KEY_WIFI)) {
 			mLlWifiOptions.setVisibility(View.VISIBLE);
@@ -284,11 +321,12 @@ public class AlarmEdit extends Activity {
 		}
 		vUpdateBackup(false);
 	}
+
 	private void vUpdateMuteSnooze() {
 		mTvMuteSnoozeTime.setText(mAlarmItem.getMuteSnoozeTimeText());
-			
+
 	}
-	
+
 	private void assignListeners() {
 		mLlEnabled.setOnClickListener(mLlEnabledOnClick);
 		mLlTime.setOnClickListener(mLlTimeOnClick);
@@ -313,30 +351,33 @@ public class AlarmEdit extends Activity {
 		mLlMuteSnooze.setOnClickListener(mLlMuteSnoozeOnClick);
 		mLlMuteSnoozeTime.setOnClickListener(mLlMuteSnoozeTimeOnClick);
 		mLlLabel.setOnClickListener(mLlLabelOnClick);
-		
+
 		mChkEnabled.setOnCheckedChangeListener(mChkEnabledOnChange);
-		mChkDontLaunchOnCall.setOnCheckedChangeListener(mChkDontLaunchOnCallOnChange);
+		mChkDontLaunchOnCall
+				.setOnCheckedChangeListener(mChkDontLaunchOnCallOnChange);
 		mChkNetTest.setOnCheckedChangeListener(mChkNetTestOnChange);
 		mChkWifi.setOnCheckedChangeListener(mChkWifiOnChange);
-		mChkSetMediaVolume.setOnCheckedChangeListener(mChkSetMediaVolumeOnChange);
+		mChkSetMediaVolume
+				.setOnCheckedChangeListener(mChkSetMediaVolumeOnChange);
 		mChkTurnOffWifi.setOnCheckedChangeListener(mChkTurnOffWifiOnChange);
 		mChkStopApp.setOnCheckedChangeListener(mChkStopAppOnChange);
 		mChkForceRestart.setOnCheckedChangeListener(mChkForceRestartOnChange);
 		mChkMuteSnooze.setOnCheckedChangeListener(mChkMuteSnooeOnChange);
-		
-//		((Button)findViewById(R.id.m_btn_pro)).setOnClickListener(new View.OnClickListener() {
-//			@Override
-//			public void onClick(View v) {
-//				LiteHelper.getProVersion(getBaseContext());
-//			}
-//		});
+
+		// ((Button)findViewById(R.id.m_btn_pro)).setOnClickListener(new
+		// View.OnClickListener() {
+		// @Override
+		// public void onClick(View v) {
+		// LiteHelper.getProVersion(getBaseContext());
+		// }
+		// });
 	}
-	
+
 	private void doAlarmSet() {
 		mDbAdapter.saveAlarm(mAlarmItem);
 		Intent i = new Intent(this, AalService.class);
-    	i.setAction(AalService.ACTION_SET_SILENT_ALARM);
-    	startService(i);
+		i.setAction(AalService.ACTION_SET_SILENT_ALARM);
+		startService(i);
 	}
 
 	@Override
@@ -350,41 +391,61 @@ public class AlarmEdit extends Activity {
 		mDbAdapter.saveAlarm(mAlarmItem);
 		super.onPause();
 	}
-	
-	
-	
-	
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (resultCode == RESULT_OK) {
 			switch (requestCode) {
 			case ACTION_CHOOSE_APP:
-				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, data.getStringExtra(AppChooser.EXTRA_PACKAGE_NAME));
+				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME,
+						data.getStringExtra(AppChooser.EXTRA_PACKAGE_NAME));
 				mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION, "");
 				mAlarmItem.set(AlarmItem.KEY_CUSTOM_DATA, "");
 				mAlarmItem.set(AlarmItem.KEY_CUSTOM_TYPE, "");
 				vUpdateApp();
 				break;
 			case ACTION_INPUT_LABEL:
-				mAlarmItem.set(AlarmItem.KEY_LABEL, data.getStringExtra(StringInputDialog.EXTRA_VALUE));
+				mAlarmItem.set(AlarmItem.KEY_LABEL,
+						data.getStringExtra(StringInputDialog.EXTRA_VALUE));
 				vUpdateLabel();
 				break;
 			case ACTION_CHOOSE_APP_CUSTOM:
-				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, data.getStringExtra(AppChooser.EXTRA_PACKAGE_NAME));
+				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME,
+						data.getStringExtra(AppChooser.EXTRA_PACKAGE_NAME));
 				vUpdateApp();
 				break;
 			case ACTION_CHOOSE_FROM_PROVIDER:
 				processShortcut(data);
 				break;
+
+			case ACTION_CHOOSE_SONG:
+				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "song");
+				mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION, Intent.ACTION_VIEW);
+				mAlarmItem.set(AlarmItem.KEY_CUSTOM_DATA, "file://"
+						+ data.getData().getPath());
+				mAlarmItem.set(AlarmItem.KEY_CUSTOM_TYPE, "audio/mp3");
+				Toast.makeText(getApplicationContext(),
+						data.getData().getPath(), Toast.LENGTH_LONG).show();
+				vUpdateApp();
+				break;
 			case ACTION_CUSTOM_INTENT:
-				String dataString = data.getStringExtra(AlarmItem.KEY_CUSTOM_DATA);
+				String dataString = data
+						.getStringExtra(AlarmItem.KEY_CUSTOM_DATA);
 				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "");
-				mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION, data.getStringExtra(AlarmItem.KEY_CUSTOM_ACTION));
+				mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION,
+						data.getStringExtra(AlarmItem.KEY_CUSTOM_ACTION));
 				mAlarmItem.set(AlarmItem.KEY_CUSTOM_DATA, dataString);
-				mAlarmItem.set(AlarmItem.KEY_CUSTOM_TYPE, data.getStringExtra(AlarmItem.KEY_CUSTOM_TYPE));
+				mAlarmItem.set(AlarmItem.KEY_CUSTOM_TYPE,
+						data.getStringExtra(AlarmItem.KEY_CUSTOM_TYPE));
 				if (mAlarmItem.isShortcutIntent()) {
 					try {
-						mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, Intent.getIntent(mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA)).getComponent().getPackageName());
+						mAlarmItem
+								.set(AlarmItem.KEY_PACKAGE_NAME,
+										Intent.getIntent(
+												mAlarmItem
+														.getString(AlarmItem.KEY_CUSTOM_DATA))
+												.getComponent()
+												.getPackageName());
 					} catch (URISyntaxException e) {
 						mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "custom");
 						e.printStackTrace();
@@ -396,13 +457,20 @@ public class AlarmEdit extends Activity {
 				vUpdateApp();
 				break;
 			case ACTION_CHOOSE_REPEAT:
-				mAlarmItem.set(AlarmItem.KEY_RPT_MON, data.getBooleanExtra(AlarmItem.KEY_RPT_MON, false));
-				mAlarmItem.set(AlarmItem.KEY_RPT_TUES, data.getBooleanExtra(AlarmItem.KEY_RPT_TUES, false));
-				mAlarmItem.set(AlarmItem.KEY_RPT_WED, data.getBooleanExtra(AlarmItem.KEY_RPT_WED, false));
-				mAlarmItem.set(AlarmItem.KEY_RPT_THURS, data.getBooleanExtra(AlarmItem.KEY_RPT_THURS, false));
-				mAlarmItem.set(AlarmItem.KEY_RPT_FRI, data.getBooleanExtra(AlarmItem.KEY_RPT_FRI, false));
-				mAlarmItem.set(AlarmItem.KEY_RPT_SAT, data.getBooleanExtra(AlarmItem.KEY_RPT_SAT, false));
-				mAlarmItem.set(AlarmItem.KEY_RPT_SUN, data.getBooleanExtra(AlarmItem.KEY_RPT_SUN, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_MON,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_MON, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_TUES,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_TUES, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_WED,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_WED, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_THURS,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_THURS, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_FRI,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_FRI, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_SAT,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_SAT, false));
+				mAlarmItem.set(AlarmItem.KEY_RPT_SUN,
+						data.getBooleanExtra(AlarmItem.KEY_RPT_SUN, false));
 				vUpdateRepeat();
 				if (mAlarmItem.getBool(AlarmItem.KEY_ENABLED)) {
 					doAlarmSet();
@@ -413,32 +481,40 @@ public class AlarmEdit extends Activity {
 			case ACTION_CHOOSE_RINGTONE:
 				if (data.hasExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)) {
 					Bundle b = data.getExtras();
-					mAlarmItem.set(AlarmItem.KEY_BACKUP, ((Uri)b.get(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)).toString());
+					mAlarmItem.set(AlarmItem.KEY_BACKUP, ((Uri) b
+							.get(RingtoneManager.EXTRA_RINGTONE_PICKED_URI))
+							.toString());
 					vUpdateBackup(true);
 				}
 				break;
 			case ACTION_CHOOSE_MEDIA_VOLUME:
-				mAlarmItem.set(AlarmItem.KEY_MEDIA_VOLUME, data.getIntExtra(AlarmItem.KEY_MEDIA_VOLUME, 50));
+				mAlarmItem.set(AlarmItem.KEY_MEDIA_VOLUME,
+						data.getIntExtra(AlarmItem.KEY_MEDIA_VOLUME, 50));
 				vUpdateMediaVolume(false);
 				break;
 			case ACTION_CHOOSE_TIMEOUT_BATT:
-				mAlarmItem.set(AlarmItem.KEY_WL_TIMEOUT_BATT, data.getIntExtra(TimeChooser.EXTRA_VALUE, 60));
+				mAlarmItem.set(AlarmItem.KEY_WL_TIMEOUT_BATT,
+						data.getIntExtra(TimeChooser.EXTRA_VALUE, 60));
 				vUpdateBattTimeout();
 				break;
 			case ACTION_CHOOSE_TIMEOUT_PLUG:
-				mAlarmItem.set(AlarmItem.KEY_WL_TIMEOUT_PLUG, data.getIntExtra(TimeChooser.EXTRA_VALUE, 60));
+				mAlarmItem.set(AlarmItem.KEY_WL_TIMEOUT_PLUG,
+						data.getIntExtra(TimeChooser.EXTRA_VALUE, 60));
 				vUpdatePlugTimeout();
 				break;
 			case ACTION_INPUT_NET_TEST_URL:
-				mAlarmItem.set(AlarmItem.KEY_NET_TEST_URL, data.getStringExtra(StringInputDialog.EXTRA_VALUE));
+				mAlarmItem.set(AlarmItem.KEY_NET_TEST_URL,
+						data.getStringExtra(StringInputDialog.EXTRA_VALUE));
 				vUpdateNetTest();
 				break;
 			case ACTION_CHOOSE_WIFI_WAIT_TIME:
-				mAlarmItem.set(AlarmItem.KEY_WIFI_WAIT_TIME, data.getIntExtra(TimeChooser.EXTRA_VALUE, 300));
+				mAlarmItem.set(AlarmItem.KEY_WIFI_WAIT_TIME,
+						data.getIntExtra(TimeChooser.EXTRA_VALUE, 300));
 				vUpdateWifi();
 				break;
 			case ACTION_CHOOSE_MUTE_SNOOZE_TIME:
-				mAlarmItem.set(AlarmItem.KEY_MUTE_SNOOZE_TIME, data.getIntExtra(TimeChooser.EXTRA_VALUE, 300));
+				mAlarmItem.set(AlarmItem.KEY_MUTE_SNOOZE_TIME,
+						data.getIntExtra(TimeChooser.EXTRA_VALUE, 300));
 				vUpdateMuteSnooze();
 				break;
 			case ACTION_CREATE_HOME_SCREEN_SHORTCUT:
@@ -448,52 +524,61 @@ public class AlarmEdit extends Activity {
 				processShortcut(data);
 				break;
 			}
-			
-		
+
 		} else {
 			switch (requestCode) {
 			case ACTION_CHOOSE_APP_CUSTOM:
 				mChkStopApp.setChecked(false);
 			}
 		}
-		
+
 		super.onActivityResult(requestCode, resultCode, data);
 	}
-	
+
 	private void processShortcut(Intent data) {
 		Intent i = data.getParcelableExtra(Intent.EXTRA_SHORTCUT_INTENT);
 		mAlarmItem.set(AlarmItem.KEY_CUSTOM_DATA, AalService.getIntentUri(i));
 		if (data.hasExtra(ProviderList.EXTRA_PACKAGE_NAME)) {
-			mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, data.getStringExtra(ProviderList.EXTRA_PACKAGE_NAME));
+			mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME,
+					data.getStringExtra(ProviderList.EXTRA_PACKAGE_NAME));
 		} else {
 			try {
-				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, i.getComponent().getPackageName());
+				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, i.getComponent()
+						.getPackageName());
 			} catch (Exception e) {
 				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "");
 				e.printStackTrace();
-			}			
+			}
 
 		}
 
 		if (!mAlarmItem.hasPackageName()) {
-			mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "custom");
+			if (mAlarmItem.isCustomIntent())
+				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "custom");
+			else
+				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "song");
 		}
-		mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION, data.getStringExtra(Intent.EXTRA_SHORTCUT_NAME));
+		mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION,
+				data.getStringExtra(Intent.EXTRA_SHORTCUT_NAME));
 		mAlarmItem.set(AlarmItem.KEY_CUSTOM_TYPE, "");
 		vUpdateApp();
 	}
-	
+
 	private void checkCustomAppPackage() {
-		if ((mAlarmItem.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT) || mAlarmItem.getBool(AlarmItem.KEY_FORCE_RESTART)) && mAlarmItem.isCustomIntent()) {
-			showDialog(DIALOG_WARN_STOP_APP);
+		if ((mAlarmItem.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT) || (mAlarmItem
+				.getBool(AlarmItem.KEY_FORCE_RESTART))
+				&& (mAlarmItem.isCustomIntent() || mAlarmItem.isSong()))) {
+
 		}
 	}
 
 	@Override
 	protected Dialog onCreateDialog(int id) {
-		switch(id) {
+		switch (id) {
 		case DIALOG_PICK_TIME:
-			return new TimePickerDialog(this, mOnTimeSetListener, mAlarmItem.getInt(AlarmItem.KEY_HOUR), mAlarmItem.getInt(AlarmItem.KEY_MINUTE), false);
+			return new TimePickerDialog(this, mOnTimeSetListener,
+					mAlarmItem.getInt(AlarmItem.KEY_HOUR),
+					mAlarmItem.getInt(AlarmItem.KEY_MINUTE), false);
 		case DIALOG_PICK_BACKUP_OPTION:
 			AlertDialog.Builder adb = new AlertDialog.Builder(this);
 			adb.setTitle(R.string.ea_ti_backup_option);
@@ -507,7 +592,8 @@ public class AlarmEdit extends Activity {
 		case DIALOG_PICK_WIFI_FAILED_ACTION:
 			AlertDialog.Builder adb3 = new AlertDialog.Builder(this);
 			adb3.setTitle(R.string.ea_ti_wifi_failed);
-			adb3.setItems(AlarmItem.WIFI_FAILED_OPTIONS, mWifiFailedDialogOnClick);
+			adb3.setItems(AlarmItem.WIFI_FAILED_OPTIONS,
+					mWifiFailedDialogOnClick);
 			return adb3.create();
 		case DIALOG_BITLY:
 			ProgressDialog pd = new ProgressDialog(this);
@@ -520,33 +606,34 @@ public class AlarmEdit extends Activity {
 			adb4.setTitle(R.string.ae_stop_app_warning_title);
 			adb4.setMessage(R.string.ae_stop_app_warning_message);
 			adb4.setCancelable(false);
-			adb4.setPositiveButton("Select App", new DialogInterface.OnClickListener() {
+			adb4.setPositiveButton("Select App",
+					new DialogInterface.OnClickListener() {
 
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					Intent i = new Intent(getBaseContext(), AppChooser.class);
-					startActivityForResult(i, ACTION_CHOOSE_APP_CUSTOM);
-				}
-				
-			});
-			adb4.setNegativeButton("Ignore", new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							Intent i = new Intent(getBaseContext(),
+									AppChooser.class);
+							startActivityForResult(i, ACTION_CHOOSE_APP_CUSTOM);
+						}
 
-				@Override
-				public void onClick(DialogInterface dialog, int which) {
-					mChkStopApp.setChecked(false);
-					mChkForceRestart.setChecked(false);
-				}
-				
-			});
+					});
+			adb4.setNegativeButton("Ignore",
+					new DialogInterface.OnClickListener() {
+
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							mChkStopApp.setChecked(false);
+							mChkForceRestart.setChecked(false);
+						}
+
+					});
 			return adb4.create();
-			
+
 		}
-		
+
 		return super.onCreateDialog(id);
 	}
 
-
-	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		MenuItem mi = menu.add(0, MENU_SHARE_INTENT, 0, "Share Intent");
@@ -562,7 +649,7 @@ public class AlarmEdit extends Activity {
 		switch (item.getItemId()) {
 		case MENU_OTHER_APPS:
 			i = new Intent(Intent.ACTION_VIEW);
-			i.setData(Uri.parse(getString(R.string.e6_market_uri))); 
+			i.setData(Uri.parse(getString(R.string.e6_market_uri)));
 			startActivity(i);
 			break;
 		case MENU_SHARE_INTENT:
@@ -574,8 +661,6 @@ public class AlarmEdit extends Activity {
 
 		return super.onOptionsItemSelected(item);
 	}
-
-
 
 	private TimePickerDialog.OnTimeSetListener mOnTimeSetListener = new TimePickerDialog.OnTimeSetListener() {
 
@@ -590,7 +675,7 @@ public class AlarmEdit extends Activity {
 				mChkEnabled.setChecked(true);
 			}
 		}
-		
+
 	};
 
 	private View.OnClickListener mLlEnabledOnClick = new View.OnClickListener() {
@@ -627,10 +712,13 @@ public class AlarmEdit extends Activity {
 		@Override
 		public void onClick(View v) {
 			Intent i = new Intent(RingtoneManager.ACTION_RINGTONE_PICKER);
-			i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_ALL);
+			i.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE,
+					RingtoneManager.TYPE_ALL);
 			i.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false);
-			if (!Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)).equals("")) {
-				i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
+			if (!Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)).equals(
+					"")) {
+				i.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI,
+						Uri.parse(mAlarmItem.getString(AlarmItem.KEY_BACKUP)));
 			}
 			startActivityForResult(i, ACTION_CHOOSE_RINGTONE);
 		}
@@ -647,18 +735,19 @@ public class AlarmEdit extends Activity {
 			mChkWifi.setChecked(!mChkWifi.isChecked());
 		}
 	};
-	
+
 	private View.OnClickListener mLlSetMediaVolumeOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
 			mChkSetMediaVolume.setChecked(!mChkSetMediaVolume.isChecked());
 		}
-	}; 
+	};
 	private View.OnClickListener mLlMediaVolumeOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
 			Intent i = new Intent(getBaseContext(), VolumeChooser.class);
-			i.putExtra(AlarmItem.KEY_MEDIA_VOLUME, mAlarmItem.getInt(AlarmItem.KEY_MEDIA_VOLUME));
+			i.putExtra(AlarmItem.KEY_MEDIA_VOLUME,
+					mAlarmItem.getInt(AlarmItem.KEY_MEDIA_VOLUME));
 			startActivityForResult(i, ACTION_CHOOSE_MEDIA_VOLUME);
 		}
 	};
@@ -667,8 +756,10 @@ public class AlarmEdit extends Activity {
 		public void onClick(View v) {
 			Intent i = new Intent(getBaseContext(), TimeChooser.class);
 			i.putExtra(TimeChooser.EXTRA_TITLE, R.string.ea_ti_mute_snooze_time);
-			i.putExtra(TimeChooser.EXTRA_LONG_MESSAGE, R.string.tch_lm_mute_snooze);
-			i.putExtra(TimeChooser.EXTRA_VALUE, mAlarmItem.getInt(AlarmItem.KEY_MUTE_SNOOZE_TIME));
+			i.putExtra(TimeChooser.EXTRA_LONG_MESSAGE,
+					R.string.tch_lm_mute_snooze);
+			i.putExtra(TimeChooser.EXTRA_VALUE,
+					mAlarmItem.getInt(AlarmItem.KEY_MUTE_SNOOZE_TIME));
 			startActivityForResult(i, ACTION_CHOOSE_MUTE_SNOOZE_TIME);
 		}
 	};
@@ -677,8 +768,10 @@ public class AlarmEdit extends Activity {
 		public void onClick(View v) {
 			Intent i = new Intent(getBaseContext(), TimeChooser.class);
 			i.putExtra(TimeChooser.EXTRA_TITLE, R.string.tch_ti_wifi_wait);
-			i.putExtra(TimeChooser.EXTRA_LONG_MESSAGE, R.string.tch_lm_wifi_wait);
-			i.putExtra(TimeChooser.EXTRA_VALUE, mAlarmItem.getInt(AlarmItem.KEY_WIFI_WAIT_TIME));
+			i.putExtra(TimeChooser.EXTRA_LONG_MESSAGE,
+					R.string.tch_lm_wifi_wait);
+			i.putExtra(TimeChooser.EXTRA_VALUE,
+					mAlarmItem.getInt(AlarmItem.KEY_WIFI_WAIT_TIME));
 			startActivityForResult(i, ACTION_CHOOSE_WIFI_WAIT_TIME);
 		}
 	};
@@ -691,25 +784,29 @@ public class AlarmEdit extends Activity {
 	private View.OnClickListener mLlTurnOffWifiOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
-			mChkTurnOffWifi.setChecked(!mAlarmItem.getBool(AlarmItem.KEY_TURN_OFF_WIFI));
+			mChkTurnOffWifi.setChecked(!mAlarmItem
+					.getBool(AlarmItem.KEY_TURN_OFF_WIFI));
 		}
 	};
 	private View.OnClickListener mLlStopAppOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
-			mChkStopApp.setChecked(!mAlarmItem.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT));
+			mChkStopApp.setChecked(!mAlarmItem
+					.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT));
 		}
-	};	
+	};
 	private View.OnClickListener mLlForceRestartOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
-			mChkForceRestart.setChecked(!mAlarmItem.getBool(AlarmItem.KEY_FORCE_RESTART));
+			mChkForceRestart.setChecked(!mAlarmItem
+					.getBool(AlarmItem.KEY_FORCE_RESTART));
 		}
 	};
 	private View.OnClickListener mLlMuteSnoozeOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
-			mChkMuteSnooze.setChecked(!mAlarmItem.getBool(AlarmItem.KEY_MUTE_SNOOZE));
+			mChkMuteSnooze.setChecked(!mAlarmItem
+					.getBool(AlarmItem.KEY_MUTE_SNOOZE));
 		}
 	};
 	private View.OnClickListener mLlLabelOnClick = new View.OnClickListener() {
@@ -719,14 +816,17 @@ public class AlarmEdit extends Activity {
 			Intent i = new Intent(AlarmEdit.this, StringInputDialog.class);
 			i.putExtra(StringInputDialog.EXTRA_HIDE_HTTP_TEST, true);
 			i.putExtra(StringInputDialog.EXTRA_TITLE, R.string.ea_ti_label);
-			i.putExtra(StringInputDialog.EXTRA_SHORT_MESSAGE, R.string.ea_ti_label);
-			i.putExtra(StringInputDialog.EXTRA_LONG_MESSAGE, R.string.ea_label_msg);
-			i.putExtra(StringInputDialog.EXTRA_VALUE, mAlarmItem.getString(AlarmItem.KEY_LABEL));
+			i.putExtra(StringInputDialog.EXTRA_SHORT_MESSAGE,
+					R.string.ea_ti_label);
+			i.putExtra(StringInputDialog.EXTRA_LONG_MESSAGE,
+					R.string.ea_label_msg);
+			i.putExtra(StringInputDialog.EXTRA_VALUE,
+					mAlarmItem.getString(AlarmItem.KEY_LABEL));
 			startActivityForResult(i, ACTION_INPUT_LABEL);
 		}
-		
+
 	};
-	
+
 	private CheckBox.OnCheckedChangeListener mChkEnabledOnChange = new CheckBox.OnCheckedChangeListener() {
 		@Override
 		public void onCheckedChanged(CompoundButton buttonView,
@@ -742,7 +842,7 @@ public class AlarmEdit extends Activity {
 				boolean isChecked) {
 			mAlarmItem.set(AlarmItem.KEY_NET_TEST, isChecked);
 			vUpdateNetTest();
-//			vUpdateBackup(false);
+			// vUpdateBackup(false);
 		}
 	};
 
@@ -752,7 +852,8 @@ public class AlarmEdit extends Activity {
 				boolean isChecked) {
 			mAlarmItem.set(AlarmItem.KEY_MUTE_SNOOZE, isChecked);
 			if (isChecked) {
-				Toast.makeText(getBaseContext(), R.string.snooze_warning, Toast.LENGTH_LONG).show();
+				Toast.makeText(getBaseContext(), R.string.snooze_warning,
+						Toast.LENGTH_LONG).show();
 			}
 		}
 	};
@@ -786,9 +887,13 @@ public class AlarmEdit extends Activity {
 			vUpdateBackup(false);
 			if (which == 2) {
 				mChkNetTest.setChecked(true);
-				Toast.makeText(getBaseContext(), "Make sure to enable the \"Test Network\" option, if you want the backup alarm to work.", Toast.LENGTH_LONG).show();
+				Toast.makeText(
+						getBaseContext(),
+						"Make sure to enable the \"Test Network\" option, if you want the backup alarm to work.",
+						Toast.LENGTH_LONG).show();
 			}
-//			Toast.makeText(getBaseContext(), AalDbAdapter.BACKUP_OPTIONS[which], Toast.LENGTH_SHORT).show();
+			// Toast.makeText(getBaseContext(),
+			// AalDbAdapter.BACKUP_OPTIONS[which], Toast.LENGTH_SHORT).show();
 		}
 	};
 	private DialogInterface.OnClickListener mAppTypeDialogOnClick = new DialogInterface.OnClickListener() {
@@ -798,52 +903,58 @@ public class AlarmEdit extends Activity {
 			Intent i;
 			switch (which) {
 			case 0:
-				//Select App
+				// Select App
 				i = new Intent(getBaseContext(), AppChooser.class);
 				startActivityForResult(i, ACTION_CHOOSE_APP);
 				break;
 			case 1:
-				//Create Shortcut
+				// Create Shortcut
 				i = new Intent(Intent.ACTION_PICK_ACTIVITY);
-				i.putExtra(Intent.EXTRA_INTENT, new Intent(Intent.ACTION_CREATE_SHORTCUT));
+				i.putExtra(Intent.EXTRA_INTENT, new Intent(
+						Intent.ACTION_CREATE_SHORTCUT));
 				i.putExtra(Intent.EXTRA_TITLE, "Create a Shortcut");
 				startActivityForResult(i, ACTION_CREATE_HOME_SCREEN_SHORTCUT);
 				break;
 			case 2:
-				//Home Screen Shortcut
+				// Home Screen Shortcut
 				i = new Intent(getBaseContext(), ProviderList.class);
-				i.putExtra(ProviderList.EXTRA_PROVIDER, ProviderList.PROVIDER_HOMESCREEN);
+				i.putExtra(ProviderList.EXTRA_PROVIDER,
+						ProviderList.PROVIDER_HOMESCREEN);
 				startActivityForResult(i, ACTION_CHOOSE_FROM_PROVIDER);
 				break;
 			case 3:
-				//Pandora Station
+				// Pandora Station
 				i = new Intent(getBaseContext(), ProviderList.class);
-				i.putExtra(ProviderList.EXTRA_PROVIDER, ProviderList.PROVIDER_PANDORA);
+				i.putExtra(ProviderList.EXTRA_PROVIDER,
+						ProviderList.PROVIDER_PANDORA);
 				startActivityForResult(i, ACTION_CHOOSE_FROM_PROVIDER);
 				break;
-//			case 4:
-//				//Google Listen Feed
-//				//TODO: Need to check out what queue looks like in db
-//				i = new Intent(getBaseContext(), CustomActionActivity.class);
-//				i.putExtra(CustomActionActivity.EXTRA_ACTION_TYPE, CustomActionActivity.ACTION_TYPE_LATEST_UNHEARD_LISTEN_PODCAST);
-//				mAlarmItem.packageName = CustomActionActivity.GOOGLE_LISTEN_PACKAGE_NAME);
-//				mAlarmItem.customAction = "Latest Podcast on Google Listen";
-//				mAlarmItem.customData = AalService.getIntentUri(i);
-//				mAlarmItem.customType = "";
-//				vUpdateApp();
-//				break;
+
 			case 4:
-				//Custom Intent
+				// Custom Intent
 				i = new Intent(getBaseContext(), CustomIntentMaker.class);
-				i.putExtra(AlarmItem.KEY_CUSTOM_ACTION, mAlarmItem.getString(AlarmItem.KEY_CUSTOM_ACTION));
-				i.putExtra(AlarmItem.KEY_CUSTOM_DATA, mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
-				i.putExtra(AlarmItem.KEY_CUSTOM_TYPE, mAlarmItem.getString(AlarmItem.KEY_CUSTOM_TYPE));
-//				i.putExtra(AlarmItem.KEY_PACKAGE_NAME, mAlarmItem.packageName);
+				i.putExtra(AlarmItem.KEY_CUSTOM_ACTION,
+						mAlarmItem.getString(AlarmItem.KEY_CUSTOM_ACTION));
+				i.putExtra(AlarmItem.KEY_CUSTOM_DATA,
+						mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
+				i.putExtra(AlarmItem.KEY_CUSTOM_TYPE,
+						mAlarmItem.getString(AlarmItem.KEY_CUSTOM_TYPE));
+				// i.putExtra(AlarmItem.KEY_PACKAGE_NAME,
+				// mAlarmItem.packageName);
 				startActivityForResult(i, ACTION_CUSTOM_INTENT);
 				break;
 
 			case 5:
-				//Clear App
+				// Pick song
+				Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+				intent.setType("audio/mp3");
+				// Uri data = Uri.fromFile(getTempFile());
+				// intent.setData(data);
+				startActivityForResult(intent, ACTION_CHOOSE_SONG);
+				break;
+
+			case 6:
+				// Clear App
 				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "");
 				mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION, "");
 				mAlarmItem.set(AlarmItem.KEY_CUSTOM_DATA, "");
@@ -852,7 +963,7 @@ public class AlarmEdit extends Activity {
 				break;
 			}
 		}
-		
+
 	};
 	private DialogInterface.OnClickListener mWifiFailedDialogOnClick = new DialogInterface.OnClickListener() {
 
@@ -861,23 +972,32 @@ public class AlarmEdit extends Activity {
 			mAlarmItem.set(AlarmItem.KEY_WIFI_FAILED_ACTION, which);
 			vUpdateWifi();
 		}
-		
+
 	};
-	
+
 	private void makeIntentUrl() {
 		String rtr = "";
-		rtr += "/" + escapeIntentItem(mAlarmItem.getString(AlarmItem.KEY_PACKAGE_NAME));
-		rtr += "/" + escapeIntentItem(mAlarmItem.getString(AlarmItem.KEY_CUSTOM_ACTION));
-		rtr += "/" + escapeIntentItem(mAlarmItem.getString(AlarmItem.KEY_CUSTOM_TYPE));
-		rtr += "/" + escapeIntentItem(mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
+		rtr += "/"
+				+ escapeIntentItem(mAlarmItem
+						.getString(AlarmItem.KEY_PACKAGE_NAME));
+		rtr += "/"
+				+ escapeIntentItem(mAlarmItem
+						.getString(AlarmItem.KEY_CUSTOM_ACTION));
+		rtr += "/"
+				+ escapeIntentItem(mAlarmItem
+						.getString(AlarmItem.KEY_CUSTOM_TYPE));
+		rtr += "/"
+				+ escapeIntentItem(mAlarmItem
+						.getString(AlarmItem.KEY_CUSTOM_DATA));
 		try {
-			mUrl = "http://episode6.com/ibuilder/m" + java.net.URLEncoder.encode(rtr, "UTF-8");
+			mUrl = "http://episode6.com/ibuilder/m"
+					+ java.net.URLEncoder.encode(rtr, "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			mUrl = "http://episode6.com/ibuilder/m" + rtr;
 			e.printStackTrace();
 		}
 	}
-	
+
 	private String escapeIntentItem(String item) {
 		if (item == null) {
 			return "null";
@@ -887,40 +1007,40 @@ public class AlarmEdit extends Activity {
 			return item.trim().replaceAll("/", "@@").replaceAll("%2F", "@@");
 		}
 	}
-	
-    private void makeBitlyUrl(String url) throws Exception{
-    	String bUrl = "";
-    	String rtrUrl = "";
 
-		bUrl = "http://api.bit.ly/shorten?version=2.0.1&longUrl=" + java.net.URLEncoder.encode(url, "UTF-8");
-    	bUrl += ApiKeys.BITLY_API_LOGIN_AND_KEY;
-    	String jsonStr = "";
-    	
+	private void makeBitlyUrl(String url) throws Exception {
+		String bUrl = "";
+		String rtrUrl = "";
 
-   		jsonStr = HTTPHelper.DownloadText(bUrl);
+		bUrl = "http://api.bit.ly/shorten?version=2.0.1&longUrl="
+				+ java.net.URLEncoder.encode(url, "UTF-8");
+		bUrl += ApiKeys.BITLY_API_LOGIN_AND_KEY;
+		String jsonStr = "";
 
-    	if (jsonStr.length() != 0) {
+		jsonStr = HTTPHelper.DownloadText(bUrl);
+
+		if (jsonStr.length() != 0) {
 			JSONObject jo = new JSONObject(jsonStr);
 			JSONObject results = jo.getJSONObject("results");
 			results = results.getJSONObject(url);
 			rtrUrl = results.getString("shortUrl");
-    	}
-    	mUrl = rtrUrl;
-    }
-    
-    private void copyToClipboard(String url) {
-    	ClipboardManager cm = (ClipboardManager)getSystemService(CLIPBOARD_SERVICE);
-    	cm.setText(url);
-    }
-    
-    private void sendMessage(String url) {
-    	Intent i = new Intent(Intent.ACTION_SEND);
-    	i.setType("text/plain");
-    	i.putExtra(Intent.EXTRA_TEXT, url);
-    	startActivity(Intent.createChooser(i, "Share Link With..."));
-    }
-    
-    private View.OnCreateContextMenuListener mLlAppOnCreateContext = new View.OnCreateContextMenuListener() {
+		}
+		mUrl = rtrUrl;
+	}
+
+	private void copyToClipboard(String url) {
+		ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+		cm.setText(url);
+	}
+
+	private void sendMessage(String url) {
+		Intent i = new Intent(Intent.ACTION_SEND);
+		i.setType("text/plain");
+		i.putExtra(Intent.EXTRA_TEXT, url);
+		startActivity(Intent.createChooser(i, "Share Link With..."));
+	}
+
+	private View.OnCreateContextMenuListener mLlAppOnCreateContext = new View.OnCreateContextMenuListener() {
 
 		@Override
 		public void onCreateContextMenu(ContextMenu menu, View v,
@@ -928,19 +1048,21 @@ public class AlarmEdit extends Activity {
 			menu.add(0, CTX_EDIT_INTENT, 0, "Edit Custom Intent");
 			menu.add(0, CTX_SHARE_INTENT, 1, "Share This Intent");
 		}
-    	
-    };
 
+	};
 
 	@Override
 	public boolean onContextItemSelected(MenuItem item) {
-		switch(item.getItemId()) {
+		switch (item.getItemId()) {
 		case CTX_EDIT_INTENT:
 			Intent i = new Intent(getBaseContext(), CustomIntentMaker.class);
-			i.putExtra(AlarmItem.KEY_CUSTOM_ACTION, mAlarmItem.getString(AlarmItem.KEY_CUSTOM_ACTION));
-			i.putExtra(AlarmItem.KEY_CUSTOM_DATA, mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
-			i.putExtra(AlarmItem.KEY_CUSTOM_TYPE, mAlarmItem.getString(AlarmItem.KEY_CUSTOM_TYPE));
-//			i.putExtra(AlarmItem.KEY_PACKAGE_NAME, mAlarmItem.packageName);
+			i.putExtra(AlarmItem.KEY_CUSTOM_ACTION,
+					mAlarmItem.getString(AlarmItem.KEY_CUSTOM_ACTION));
+			i.putExtra(AlarmItem.KEY_CUSTOM_DATA,
+					mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
+			i.putExtra(AlarmItem.KEY_CUSTOM_TYPE,
+					mAlarmItem.getString(AlarmItem.KEY_CUSTOM_TYPE));
+			// i.putExtra(AlarmItem.KEY_PACKAGE_NAME, mAlarmItem.packageName);
 			startActivityForResult(i, ACTION_CUSTOM_INTENT);
 			break;
 		case CTX_SHARE_INTENT:
@@ -951,10 +1073,9 @@ public class AlarmEdit extends Activity {
 		}
 		return super.onContextItemSelected(item);
 	}
-	
-	
+
 	private final Handler mHandler = new Handler();
-	
+
 	private Runnable mMakeUrlTask = new Runnable() {
 
 		@Override
@@ -963,12 +1084,12 @@ public class AlarmEdit extends Activity {
 			try {
 				makeBitlyUrl(mUrl);
 			} catch (Exception e) {
-				
+
 			}
 			copyToClipboard(mUrl);
 			mHandler.post(mFinishUrlTask);
 		}
-		
+
 	};
 	private Runnable mFinishUrlTask = new Runnable() {
 
@@ -976,32 +1097,41 @@ public class AlarmEdit extends Activity {
 		public void run() {
 			dismissDialog(DIALOG_BITLY);
 			if (!mUrl.startsWith("http://bit.ly")) {
-				Toast.makeText(getBaseContext(), "Error shortening link with Bit.ly, using long link instead.", Toast.LENGTH_LONG).show();
+				Toast.makeText(
+						getBaseContext(),
+						"Error shortening link with Bit.ly, using long link instead.",
+						Toast.LENGTH_LONG).show();
 			}
-			Toast.makeText(getBaseContext(), mUrl + " copied to clipboard.", Toast.LENGTH_LONG).show();
+			Toast.makeText(getBaseContext(), mUrl + " copied to clipboard.",
+					Toast.LENGTH_LONG).show();
 			sendMessage(mUrl);
 		}
-		
-	};
-    
 
-	
-	
-	//************************LITE EDITS******************************************
-	
-	//LinearLayouts
-//	LiteHelper.showProFeatureDialog(AlarmEdit.this);
+	};
+
+	// ************************LITE
+	// EDITS******************************************
+
+	// LinearLayouts
+	// LiteHelper.showProFeatureDialog(AlarmEdit.this);
 	private View.OnClickListener mLlRepeatOnClick = new View.OnClickListener() {
 		@Override
 		public void onClick(View v) {
 			Intent i = new Intent(getBaseContext(), RepeatChooser.class);
-			i.putExtra(AlarmItem.KEY_RPT_MON, mAlarmItem.getBool(AlarmItem.KEY_RPT_MON));
-			i.putExtra(AlarmItem.KEY_RPT_TUES, mAlarmItem.getBool(AlarmItem.KEY_RPT_TUES));
-			i.putExtra(AlarmItem.KEY_RPT_WED, mAlarmItem.getBool(AlarmItem.KEY_RPT_WED));
-			i.putExtra(AlarmItem.KEY_RPT_THURS, mAlarmItem.getBool(AlarmItem.KEY_RPT_THURS));
-			i.putExtra(AlarmItem.KEY_RPT_FRI, mAlarmItem.getBool(AlarmItem.KEY_RPT_FRI));
-			i.putExtra(AlarmItem.KEY_RPT_SAT, mAlarmItem.getBool(AlarmItem.KEY_RPT_SAT));
-			i.putExtra(AlarmItem.KEY_RPT_SUN, mAlarmItem.getBool(AlarmItem.KEY_RPT_SUN));
+			i.putExtra(AlarmItem.KEY_RPT_MON,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_MON));
+			i.putExtra(AlarmItem.KEY_RPT_TUES,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_TUES));
+			i.putExtra(AlarmItem.KEY_RPT_WED,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_WED));
+			i.putExtra(AlarmItem.KEY_RPT_THURS,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_THURS));
+			i.putExtra(AlarmItem.KEY_RPT_FRI,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_FRI));
+			i.putExtra(AlarmItem.KEY_RPT_SAT,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_SAT));
+			i.putExtra(AlarmItem.KEY_RPT_SUN,
+					mAlarmItem.getBool(AlarmItem.KEY_RPT_SUN));
 			startActivityForResult(i, ACTION_CHOOSE_REPEAT);
 		}
 	};
@@ -1009,10 +1139,14 @@ public class AlarmEdit extends Activity {
 		@Override
 		public void onClick(View v) {
 			Intent i = new Intent(getBaseContext(), StringInputDialog.class);
-			i.putExtra(StringInputDialog.EXTRA_TITLE, R.string.sid_ti_net_test_url);
-			i.putExtra(StringInputDialog.EXTRA_LONG_MESSAGE, R.string.sid_lm_net_test_url);
-			i.putExtra(StringInputDialog.EXTRA_SHORT_MESSAGE, R.string.sid_sm_net_test_url);
-			i.putExtra(StringInputDialog.EXTRA_VALUE, mAlarmItem.getString(AlarmItem.KEY_NET_TEST_URL));
+			i.putExtra(StringInputDialog.EXTRA_TITLE,
+					R.string.sid_ti_net_test_url);
+			i.putExtra(StringInputDialog.EXTRA_LONG_MESSAGE,
+					R.string.sid_lm_net_test_url);
+			i.putExtra(StringInputDialog.EXTRA_SHORT_MESSAGE,
+					R.string.sid_sm_net_test_url);
+			i.putExtra(StringInputDialog.EXTRA_VALUE,
+					mAlarmItem.getString(AlarmItem.KEY_NET_TEST_URL));
 			startActivityForResult(i, ACTION_INPUT_NET_TEST_URL);
 		}
 	};
@@ -1022,7 +1156,8 @@ public class AlarmEdit extends Activity {
 			Intent i = new Intent(getBaseContext(), TimeChooser.class);
 			i.putExtra(TimeChooser.EXTRA_TITLE, R.string.tch_ti_wl_batt);
 			i.putExtra(TimeChooser.EXTRA_LONG_MESSAGE, R.string.tch_lm_wl_batt);
-			i.putExtra(TimeChooser.EXTRA_VALUE, mAlarmItem.getInt(AlarmItem.KEY_WL_TIMEOUT_BATT));
+			i.putExtra(TimeChooser.EXTRA_VALUE,
+					mAlarmItem.getInt(AlarmItem.KEY_WL_TIMEOUT_BATT));
 			startActivityForResult(i, ACTION_CHOOSE_TIMEOUT_BATT);
 		}
 	};
@@ -1032,14 +1167,15 @@ public class AlarmEdit extends Activity {
 			Intent i = new Intent(getBaseContext(), TimeChooser.class);
 			i.putExtra(TimeChooser.EXTRA_TITLE, R.string.tch_ti_wl_plug);
 			i.putExtra(TimeChooser.EXTRA_LONG_MESSAGE, R.string.tch_lm_wl_plug);
-			i.putExtra(TimeChooser.EXTRA_VALUE, mAlarmItem.getInt(AlarmItem.KEY_WL_TIMEOUT_PLUG));
+			i.putExtra(TimeChooser.EXTRA_VALUE,
+					mAlarmItem.getInt(AlarmItem.KEY_WL_TIMEOUT_PLUG));
 			startActivityForResult(i, ACTION_CHOOSE_TIMEOUT_PLUG);
 		}
 	};
-	
-	//Checkboxes
-//	LiteHelper.showProFeatureDialog(AlarmEdit.this);
-//	buttonView.setChecked(!isChecked);
+
+	// Checkboxes
+	// LiteHelper.showProFeatureDialog(AlarmEdit.this);
+	// buttonView.setChecked(!isChecked);
 	private CheckBox.OnCheckedChangeListener mChkWifiOnChange = new CheckBox.OnCheckedChangeListener() {
 		@Override
 		public void onCheckedChanged(CompoundButton buttonView,
