@@ -220,11 +220,18 @@ public class AlarmEdit extends Activity {
 	}
 
 	private void vUpdateApp() {
+		if(!mAlarmItem.isSong()){
 		PackageManager pm = getPackageManager();
 		mTvApp.setText(mAlarmItem.getAppName(pm));
 		mAlarmItem.setAppIconInImageView(mIvAppIcon, pm);
 		checkCustomAppPackage();
 		pm = null;
+		} else {
+			mAlarmItem.setAppIconInImageView(mIvAppIcon, null);
+			mTvApp.setText(mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
+		}
+		
+		
 	}
 
 	private void vUpdateLabel() {

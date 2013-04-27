@@ -171,6 +171,7 @@ public class AalService extends Service {
 		}
 		// Toast.makeText(this, "Service Destroyed", Toast.LENGTH_SHORT).show();
 		try {
+			if(ct != null)
 			ct.cancel();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -626,6 +627,7 @@ public class AalService extends Service {
 	private void stopOrSet() {
 		if (isSafeToStopSelf()) {
 			try {
+				if(ct != null)
 				ct.cancel();
 			} catch (Exception e) {
 				e.printStackTrace();

@@ -269,7 +269,7 @@ public class AlarmItem extends SimplePropertyCollection {
 		if (getString(KEY_PACKAGE_NAME) == null || getString(KEY_PACKAGE_NAME).equals("")) {
 			return false;
 		} else {
-			return !isCustomIntent() || isSong();
+			return !isCustomIntent();
 		}
 	}
 	
@@ -315,9 +315,14 @@ public class AlarmItem extends SimplePropertyCollection {
 //	}
 	
 	public void setAppIconInImageView(ImageView iv, PackageManager pm) {
+		if(isSong()){
+			iv.setImageResource(R.drawable.headset);
+			return;
+		}
+		
 		if (!hasPackageName()) {
 			iv.setImageResource(R.drawable.icon);
-		} else {
+		}else{
     		try {
 				iv.setImageDrawable(pm.getApplicationIcon(getString(KEY_PACKAGE_NAME)));
 			} catch (Exception e) {
