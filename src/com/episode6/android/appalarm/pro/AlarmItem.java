@@ -38,6 +38,7 @@ public class AlarmItem extends SimplePropertyCollection {
 	public static final String KEY_RPT_SAT = "alarm_rpt_sat";
 	public static final String KEY_RPT_SUN = "alarm_rpt_sun";
 	public static final String KEY_BACKUP = "backup_alarm";
+	public static final String KEY_BACKUP_DELAY = "backup_delay";
 	public static final String KEY_ENABLED = "alarm_enabled";
 	public static final String KEY_NET_TEST = "alarm_net_test";
 	public static final String KEY_NET_TEST_URL = "alarm_net_test_url";
@@ -80,6 +81,7 @@ public class AlarmItem extends SimplePropertyCollection {
 		new SimpleProperty(KEY_RPT_SAT, false),
 		new SimpleProperty(KEY_RPT_SUN, false),
 		new SimpleProperty(KEY_BACKUP, RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE).toString()),
+		//new SimpleProperty(KEY_BACKUP_DELAY, 10),
 		new SimpleProperty(KEY_ENABLED, false),
 		new SimpleProperty(KEY_NET_TEST, false),
 		new SimpleProperty(KEY_NET_TEST_URL, "http://google.com"),

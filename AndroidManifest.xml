@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.episode6.android.appalarm.pro"
-    android:versionCode="32"
-    android:versionName="1.2.8" >
+    android:versionCode="34"
+    android:versionName="1.2.9" >
 
     <application
         android:icon="@drawable/aal_icon_2"
@@ -42,7 +42,7 @@
             android:configChanges="keyboard|keyboardHidden|orientation" >
         </activity>
 
-        <service android:name="com.episode6.android.appalarm.pro.AalService" >
+        <service android:name="com.episode6.android.appalarm.pro.AalService" android:stopWithTask="true">
         </service>
 
         <receiver android:name="com.episode6.android.appalarm.pro.AlarmReciever" >

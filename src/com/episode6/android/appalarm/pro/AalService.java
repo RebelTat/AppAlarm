@@ -3,7 +3,6 @@ package com.episode6.android.appalarm.pro;
 import java.lang.reflect.Method;
 import java.net.URISyntaxException;
 import java.util.Calendar;
-
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -70,6 +69,7 @@ public class AalService extends Service {
 	private final Handler mHandler = new Handler();
 	private AudioManager am = (AudioManager) null;
 	private CountDownTimer ct = (CountDownTimer) null;
+	private CountDownTimer t = null;
 	private int maxVol = 15;
 	private int newVol = 8;
 	private int curVol = 1;
@@ -176,6 +176,13 @@ public class AalService extends Service {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		try {
+			if(t != null)
+			t.cancel();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		am = null;
 		if (mCurrentAlarmItem != null)
 			if (mCurrentAlarmItem.isSong() && mediaPlayerInitialized)
@@ -185,6 +192,12 @@ public class AalService extends Service {
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
+		if(mCurrentAlarmItem != null){
+			actionStopAlarm(false, false);
+			if(ct != null)
+				ct.cancel();
+		}
+		
 		doAction(intent);
 
 		try {
@@ -217,9 +230,9 @@ public class AalService extends Service {
 		} else if (action.equals(ACTION_FORCE_LAUNCH_ALARM)) {
 			actionForceLaunchAlarm();
 		} else if (action.equals(ACTION_STOP_ALARM)) {
-			actionStopAlarm(false);
+			actionStopAlarm(false, true);
 		} else if (action.equals(ACTION_STOP_ALARM_AND_KILL)) {
-			actionStopAlarm(true);
+			actionStopAlarm(true, true);
 		} else if (action.equals(ACTION_SNOOZE_ALARM)) {
 			actionSnoozeAlarm();
 		} else if (action.equals(ACTION_RECOVER_SNOOZE_ALARM)) {
@@ -273,7 +286,7 @@ public class AalService extends Service {
 		}
 	}
 
-	private void actionStopAlarm(boolean killApp) {
+	private void actionStopAlarm(boolean killApp, boolean stop) {
 		cancelSnoozeAlarm();
 		am.requestAudioFocus(changed, AudioManager.STREAM_MUSIC,
 				AudioManager.AUDIOFOCUS_GAIN);
@@ -294,7 +307,7 @@ public class AalService extends Service {
 		am.abandonAudioFocus(changed);
 		if (mCurrentAlarmItem.isSong())
 			mediaPlayer.stop();
-		stopSelf();
+		if(stop)stopSelf();
 	}
 
 	AudioManager.OnAudioFocusChangeListener changed = new AudioManager.OnAudioFocusChangeListener() {
@@ -393,6 +406,12 @@ public class AalService extends Service {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		try {
+			t.cancel();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		stopSelf();
 	}
 
@@ -465,7 +484,21 @@ public class AalService extends Service {
 			}
 
 			if (mCurrentAlarmItem.getInt(AlarmItem.KEY_BACKUP_OPTION) == 1) {
-				playBackupAlarm();
+				 t = new CountDownTimer(480000, 60000){
+
+					@Override
+					public void onFinish() {
+						playBackupAlarm();
+					}
+
+					@Override
+					public void onTick(long millisUntilFinished) {
+						if(millisUntilFinished < 100000)
+						Toast.makeText(getBaseContext(), "Backup launching soon...", Toast.LENGTH_LONG).show();
+					}				
+				};
+				t.start();
+				
 			}
 
 			mIsCounting = true;
@@ -507,6 +540,8 @@ public class AalService extends Service {
 	private Notification getNotification(int message, int ticker) {
 		Notification notif = new Notification(R.drawable.stat_notify_alarm,
 				getString(ticker), System.currentTimeMillis());
+
+		
 		Intent delIntent = new Intent(this, AalService.class);
 		delIntent.setAction(ACTION_STOP_ALARM);
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
@@ -630,6 +665,13 @@ public class AalService extends Service {
 				if(ct != null)
 				ct.cancel();
 			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+			try {
+				if(t != null)t.cancel();
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
