@@ -276,6 +276,7 @@ public class AlarmItem extends SimplePropertyCollection {
 	}
 	
 	public String getAppName(PackageManager pm) {
+
 		if (getString(KEY_PACKAGE_NAME) == null || getString(KEY_PACKAGE_NAME).equals("")) {
 			return "No app selected.";
 		}

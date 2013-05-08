@@ -220,15 +220,15 @@ public class AlarmEdit extends Activity {
 	}
 
 	private void vUpdateApp() {
-		if(!mAlarmItem.isSong()){
-		PackageManager pm = getPackageManager();
-		mTvApp.setText(mAlarmItem.getAppName(pm));
-		mAlarmItem.setAppIconInImageView(mIvAppIcon, pm);
-		checkCustomAppPackage();
-		pm = null;
-		} else {
+		if(mAlarmItem.isSong()){
 			mAlarmItem.setAppIconInImageView(mIvAppIcon, null);
 			mTvApp.setText(mAlarmItem.getString(AlarmItem.KEY_CUSTOM_DATA));
+		} else {
+			PackageManager pm = getPackageManager();
+			mTvApp.setText(mAlarmItem.getAppName(pm));
+			mAlarmItem.setAppIconInImageView(mIvAppIcon, pm);
+			checkCustomAppPackage();
+			pm = null;
 		}
 		
 		
@@ -560,11 +560,9 @@ public class AlarmEdit extends Activity {
 		}
 
 		if (!mAlarmItem.hasPackageName()) {
-			if (mAlarmItem.isCustomIntent())
-				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "custom");
-			else
-				mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "song");
+			mAlarmItem.set(AlarmItem.KEY_PACKAGE_NAME, "custom");
 		}
+
 		mAlarmItem.set(AlarmItem.KEY_CUSTOM_ACTION,
 				data.getStringExtra(Intent.EXTRA_SHORTCUT_NAME));
 		mAlarmItem.set(AlarmItem.KEY_CUSTOM_TYPE, "");
@@ -575,7 +573,7 @@ public class AlarmEdit extends Activity {
 		if ((mAlarmItem.getBool(AlarmItem.KEY_STOP_APP_ON_TIMEOUT) || (mAlarmItem
 				.getBool(AlarmItem.KEY_FORCE_RESTART))
 				&& (mAlarmItem.isCustomIntent() || mAlarmItem.isSong()))) {
-
+			showDialog(DIALOG_WARN_STOP_APP);
 		}
 	}
 
